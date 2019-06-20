@@ -1,0 +1,167 @@
+#!/bin/sh
+#ftp
+/sbin/modprobe ip_conntrack_ftp
+/sbin/modprobe ip_nat_ftp
+
+IPTABLES="/sbin/iptables"
+
+MAILSERVER="XX.XX.XX.XX"
+POP3="110"
+SMTP="25"
+MONITOR="XX.XX.XX.XXX"
+HTTP="80"
+LOCALDNS="XX.XX.XX.XX"
+UDPDNS="53"
+UDPDNS1="52"
+TCPDNS="53"
+TCPDNS1="52"
+WEBMIN="10000"
+LDAPPORT="389"
+NTPPORT="123"
+
+ADMIN2="XX.XX.XX.XX"
+
+ZABBIXPORT=10050
+
+RDP="3389"
+SERV1C="XX.XX.XX.XX"
+BUHURCOMIP1="XX.XX.XX.XX"
+BUHURCOMIP3="XX.XX.XX.XX"
+BUHURCOMIP2="XX.XX.XX.XX"
+PROFIT="XX.XX.XX.XX"
+
+TRANSFORCE="XX.XX.XX.XX"
+TRANSFORCEP1="20000"
+TRANSFORCEP2="25000"
+TRANSFORCEEX="XX.XX.XX.XX"
+
+EXPED333="XX.XX.XX.XX"
+EXTVIPNET="XX.XX.XX.XX"
+BURAYA2="XX.XX.XX.XX"
+
+LAN="XX.XX.XX.XX"
+WAN="XX.XX.XX.XX"
+RANGE_LAN="XX.XX.XX.XX/24"
+LO="127.0.0.1"
+
+LANIF="eth0"
+WANIF="eth1"
+LOIF="lo"
+
+$IPTABLES -t filter -F
+$IPTABLES -t nat -F
+$IPTABLES -t mangle -F
+
+$IPTABLES -t filter -X
+$IPTABLES -t nat -X
+$IPTABLES -t mangle -X
+
+$IPTABLES -t filter -P INPUT DROP
+$IPTABLES -t filter -P FORWARD DROP
+$IPTABLES -t filter -P OUTPUT DROP
+
+$IPTABLES -N eth0-eth1
+$IPTABLES -N eth1-eth0
+$IPTABLES -N eth1-out
+$IPTABLES -N eth0-out
+$IPTABLES -N eth1-in
+$IPTABLES -N eth0-in
+$IPTABLES -N icmp_packets
+
+$IPTABLES -A INPUT -d $WAN -j $WANIF-in
+$IPTABLES -A INPUT -d $LAN -j $LANIF-in
+
+$IPTABLES -A OUTPUT -s $WAN -j $WANIF-out
+$IPTABLES -A OUTPUT -s $LAN -j $LANIF-out
+
+
+$IPTABLES -A INPUT -i $LOIF -j ACCEPT
+$IPTABLES -A OUTPUT -o $LOIF -j ACCEPT
+
+$IPTABLES -A icmp_packets -p icmp --icmp-type 8 -j ACCEPT
+$IPTABLES -A icmp_packets -p icmp --icmp-type 11 -j ACCEPT
+
+$IPTABLES -A FORWARD -i $LANIF -o $WANIF -j $LANIF-$WANIF
+$IPTABLES -A FORWARD -i $WANIF -o $LANIF -j $WANIF-$LANIF
+
+#$IPTABLES -A $LANIF-$WANIF -p icmp -j icmp_packets 
+$IPTABLES -A $LANIF-$WANIF -s $TRANSFORCE -d $TRANSFORCEEX -p tcp --dport $TRANSFORCEP1:$TRANSFORCEP2 -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -s $MONITOR  -p TCP --dport $HTTP -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -p TCP --dport $POP3 -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -p TCP --dport $SMTP -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -s $LOCALDNS -p TCP --dport $TCPDNS -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -s $LOCALDNS -p TCP --dport $TCPDNS1 -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -s $LOCALDNS -p UDP --dport $UDPDNS -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -s $LOCALDNS -p UDP --dport $UDPDNS1 -j ACCEPT
+#for SVH
+$IPTABLES -A $LANIF-$WANIF -p TCP --dport 39541 -d 85.95.132.124 -j ACCEPT
+#internet bank M.Buraya (dv bank)
+$IPTABLES -A $LANIF-$WANIF -p TCP --dport 9091 -j ACCEPT
+#ADMINS
+$IPTABLES -A $LANIF-$WANIF -s $ADMIN2 -j ACCEPT
+#for seabank
+$IPTABLES -A $LANIF-$WANIF -p TCP -d 91.208.216.21 --dport 1026 -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -p TCP -d 91.208.216.21 --dport 1024 -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -p TCP -d 91.208.216.21 --dport 443 -j ACCEPT
+#sync AD time with external source
+$IPTABLES -A $LANIF-$WANIF -p UDP -s $LOCALDNS --dport 123 -j ACCEPT
+#etran
+$IPTABLES -A $LANIF-$WANIF -p udp -s $EXPED333 -j ACCEPT
+
+$IPTABLES -A $LANIF-$WANIF -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPTABLES -A $LANIF-$WANIF -j DROP
+
+#$IPTABLES -A $WANIF-$LANIF -d $ADMIN1 -j ACCEPT
+#$IPTABLES -A $WANIF-$LANIF -d $ADMIN2 -j ACCEPT
+$IPTABLES -A $WANIF-$LANIF -s $BUHURCOMIP1 -d $SERV1C -p tcp --dport $RDP -j ACCEPT 
+$IPTABLES -A $WANIF-$LANIF -s $BUHURCOMIP2 -d $SERV1C -p tcp --dport $RDP -j ACCEPT
+$IPTABLES -A $WANIF-$LANIF -s $BUHURCOMIP3 -d $SERV1C -p tcp --dport $RDP -j ACCEPT
+$IPTABLES -A $WANIF-$LANIF -s $PROFIT -d $SERV1C -p tcp --dport $RDP -j ACCEPT
+#$IPTABLES -A $WANIF-$LANIF -d $SERV1C -p tcp --dport $RDP -j ACCEPT
+$IPTABLES -A $WANIF-$LANIF -s $TRANSFORCEEX -d $TRANSFORCE -p tcp --dport $TRANSFORCEP1:$TRANSFORCEP2 -j ACCEPT
+#etran
+#$IPTABLES -A $WANIF-$LANIF -s $EXTVIPNET -d $EXPED333 $UDPVIPNET -j ACCEPT
+#tmp
+#$IPTABLES -A $WANIF-$LANIF -d $BURAYA2 -p tcp --dport 3388 -j ACCEPT
+$IPTABLES -A $WANIF-$LANIF -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPTABLES -A $WANIF-$LANIF -j DROP
+
+$IPTABLES -A $LANIF-in -p icmp -j icmp_packets
+$IPTABLES -A $LANIF-in -p tcp --dport $ZABBIXPORT -j ACCEPT
+$IPTABLES -A $LANIF-in -p tcp --sport $LDAPPORT -j ACCEPT
+$IPTABLES -A $LANIF-in -p tcp --dport 22 -j ACCEPT
+$IPTABLES -A $LANIF-in -p udp --dport 53 -j ACCEPT
+$IPTABLES -A $LANIF-in -p udp --sport $NTPPORT -s $LOCALDNS -j ACCEPT
+$IPTABLES -A $LANIF-in -p tcp --dport 3128 -j ACCEPT
+#IPTABLES -A $LANIF-in -p tcp --dport $WEBMIN -j ACCEPT
+$IPTABLES -A $LANIF-in -j DROP
+
+#$IPTABLES -A $WANIF-in -p icmp -j icmp_packets
+$IPTABLES -A $WANIF-in -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPTABLES -A $WANIF-in -j DROP
+
+# $LANIF-out.
+
+$IPTABLES -A $LANIF-out -p icmp -j icmp_packets
+$IPTABLES -A $LANIF-out -p udp --dport $NTPPORT -d $LOCALDNS -j ACCEPT
+$IPTABLES -A $LANIF-out -p tcp --dport $LDAPPORT -j ACCEPT
+$IPTABLES -A $LANIF-out -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPTABLES -A $LANIF-out -j DROP
+
+# $WANIF-out.
+
+$IPTABLES -A $WANIF-out -p icmp -j icmp_packets
+$IPTABLES -A $WANIF-out -p udp --dport 53 -j ACCEPT
+$IPTABLES -A $WANIF-out -p tcp -m multiport --dport 80,443,21 -j ACCEPT
+#ftp_over_http
+#$IPTABLES -A $WANIF-out -p tcp --dport 21 -j ACCEPT
+$IPTABLES -A $WANIF-out -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPTABLES -A $WANIF-out -j DROP
+
+$IPTABLES -t nat -A POSTROUTING -s $RANGE_LAN -o $WANIF -j SNAT --to-source $WAN
+$IPTABLES -t nat -A PREROUTING -p tcp -d $WAN --dport $RDP -j DNAT --to-destination $SERV1C:$RDP
+$IPTABLES -t nat -A PREROUTING -p tcp -d $WAN --dport $TRANSFORCEP1:$TRANSFORCEP2 -j DNAT --to-destination $TRANSFORCE:$TRANSFORCEP1-$TRANSFORCEP2
+#$IPTABLES -t nat -A PREROUTING -p tcp -d $WAN --dport 3388 -j DNAT --to-destination $BURAYA2:3388
+
+#$IPTABLES -t nat -A PREROUTING -s $RANGE_LAN \
+#-i eth1 -p tcp -m multiport --dport 80,8080 -j REDIRECT --to-ports 3128
